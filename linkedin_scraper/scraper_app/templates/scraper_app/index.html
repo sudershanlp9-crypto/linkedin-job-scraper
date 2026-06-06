@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LinkedIn Job Scraper</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f3f2ef;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Top nav bar ── */
+    .navbar {
+      width:100%;
+      background:#ffffff;
+      border-bottom:1px solid #e0dfdc;
+      padding:0 24px;
+      height:52px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      position:sticky;
+      top:0;
+      z-index:100;
+      box-shadow:0 1px 3px rgba(0,0,0,.08);
+    }
+    .navbar svg { flex-shrink:0; }
+    .navbar-title {
+      font-size:18px;
+      font-weight:700;
+      color:#0a66c2;
+      letter-spacing:-.3px;
+    }
+
+    /* ── Main card ── */
+    .card {
+      background:#ffffff;
+      border-radius:10px;
+      box-shadow:0 0 0 1px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.06);
+      width:100%;
+      max-width:540px;
+      margin:32px 16px;
+      overflow:hidden;
+    }
+
+    .card-header {
+      background:linear-gradient(135deg,#0a66c2 0%,#004182 100%);
+      padding:28px 32px 24px;
+      color:#fff;
+    }
+    .card-header h1 { font-size:22px; font-weight:700; margin-bottom:6px; }
+    .card-header p  { font-size:13px; opacity:.85; line-height:1.5; }
+
+    .card-body { padding:28px 32px; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom:18px; }
+    label {
+      display:block;
+      font-size:13px;
+      font-weight:600;
+      color:#38434f;
+      margin-bottom:6px;
+    }
+    label .required { color:#b24020; margin-left:2px; }
+
+    input[type="text"], input[type="email"], input[type="password"],
+    input[type="number"] {
+      width:100%;
+      padding:10px 13px;
+      border:1px solid #c3c8cd;
+      border-radius:6px;
+      font-size:14px;
+      color:#1d2226;
+      background:#fff;
+      transition:border-color .2s, box-shadow .2s;
+      outline:none;
+    }
+    input:focus {
+      border-color:#0a66c2;
+      box-shadow:0 0 0 2px rgba(10,102,194,.18);
+    }
+    input::placeholder { color:#9ba8b3; }
+
+    .input-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+    .hint {
+      font-size:11px;
+      color:#7a8a98;
+      margin-top:4px;
+    }
+
+    /* ── Submit button ── */
+    .btn-submit {
+      width:100%;
+      padding:12px;
+      background:#0a66c2;
+      color:#fff;
+      border:none;
+      border-radius:24px;
+      font-size:15px;
+      font-weight:600;
+      cursor:pointer;
+      transition:background .2s, transform .1s;
+      margin-top:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    .btn-submit:hover  { background:#004182; }
+    .btn-submit:active { transform:scale(.98); }
+    .btn-submit:disabled { background:#9ca3af; cursor:not-allowed; }
+
+    /* ── Status section ── */
+    #status-section { padding:0 32px 28px; display:none; }
+
+    .status-box {
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      padding:18px 20px;
+      background:#f9fafb;
+    }
+
+    .status-title {
+      font-size:13px;
+      font-weight:700;
+      color:#38434f;
+      margin-bottom:10px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    /* spinner */
+    .spinner {
+      width:16px; height:16px;
+      border:2px solid #d1d5db;
+      border-top-color:#0a66c2;
+      border-radius:50%;
+      animation:spin .7s linear infinite;
+      flex-shrink:0;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .progress-wrap {
+      background:#e5e7eb;
+      border-radius:99px;
+      height:6px;
+      margin-bottom:10px;
+      overflow:hidden;
+    }
+    .progress-bar {
+      height:100%;
+      background:linear-gradient(90deg,#0a66c2,#00a0dc);
+      border-radius:99px;
+      transition:width .4s ease;
+      width:0%;
+    }
+
+    #status-msg { font-size:13px; color:#586877; line-height:1.5; }
+
+    /* ── Success box ── */
+    .success-box {
+      background:#f0fdf4;
+      border:1px solid #86efac;
+      border-radius:8px;
+      padding:20px;
+      text-align:center;
+    }
+    .success-icon { font-size:36px; margin-bottom:10px; }
+    .success-box h3 { font-size:16px; font-weight:700; color:#15803d; margin-bottom:6px; }
+    .success-box p  { font-size:13px; color:#4b7a5e; margin-bottom:16px; }
+
+    .btn-download {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:11px 28px;
+      background:#15803d;
+      color:#fff;
+      border:none;
+      border-radius:24px;
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+      text-decoration:none;
+      transition:background .2s;
+    }
+    .btn-download:hover { background:#166534; }
+
+    .btn-reset {
+      display:block;
+      margin:14px auto 0;
+      background:none;
+      border:none;
+      color:#0a66c2;
+      font-size:13px;
+      cursor:pointer;
+      text-decoration:underline;
+    }
+
+    /* ── Error box ── */
+    .error-box {
+      background:#fef2f2;
+      border:1px solid #fca5a5;
+      border-radius:8px;
+      padding:16px 18px;
+    }
+    .error-box h4 { font-size:14px; font-weight:700; color:#b91c1c; margin-bottom:6px; }
+    .error-box p  { font-size:13px; color:#7f1d1d; }
+
+    /* ── Footer ── */
+    .footer {
+      font-size:12px;
+      color:#9ba8b3;
+      text-align:center;
+      padding:0 0 24px;
+    }
+
+    /* ── Security note ── */
+    .security-note {
+      background:#fffbeb;
+      border:1px solid #fde68a;
+      border-radius:6px;
+      padding:10px 14px;
+      font-size:12px;
+      color:#92400e;
+      margin-bottom:18px;
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <!-- LinkedIn-style icon -->
+  <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34">
+    <path d="M34,2.5v29A2.5,2.5,0,0,1,31.5,34H2.5A2.5,2.5,0,0,1,0,31.5V2.5A2.5,2.5,0,0,1,2.5,0h29A2.5,2.5,0,0,1,34,2.5Z" fill="#0a66c2"/>
+    <path d="M7.5,14h3V26h-3ZM9,12a1.75,1.75,0,1,1,1.75-1.75A1.75,1.75,0,0,1,9,12Zm14,2h-3v1.7c0-1.93-1.25-2.2-2.3-2.2S15,14.87,15,16.7V26H12V14h3v1.5c.47-1,1.5-1.5,3-1.5A3.75,3.75,0,0,1,22,18V26H19V16A1,1,0,0,0,18,15a1,1,0,0,0-1,1V26H14V14h9Z" fill="#ffffff"/>
+  </svg>
+  <span class="navbar-title">Job Scraper</span>
+</nav>
+
+<!-- Main card -->
+<div class="card">
+  <div class="card-header">
+    <h1>LinkedIn Job Scraper</h1>
+    <p>Enter your credentials and job preferences.<br>
+       We'll scrape listings and generate an Excel report with charts automatically.</p>
+  </div>
+
+  <div class="card-body" id="form-section">
+
+    <div class="security-note">
+      ⚠️ Your credentials are used only to log in to LinkedIn. They are never stored or transmitted elsewhere.
+    </div>
+
+    <!-- Email -->
+    <div class="form-group">
+      <label>LinkedIn Email <span class="required">*</span></label>
+      <input type="email" id="email" placeholder="you@example.com"/>
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      <label>LinkedIn Password <span class="required">*</span></label>
+      <input type="password" id="password" placeholder="Your LinkedIn password"/>
+    </div>
+
+    <!-- Keyword -->
+    <div class="form-group">
+      <label>Job Role / Keyword <span class="required">*</span></label>
+      <input type="text" id="keyword" placeholder="e.g. Python Developer, Data Analyst" value="python developer"/>
+    </div>
+
+    <!-- Location + Pages -->
+    <div class="input-row">
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="location" placeholder="e.g. India, Pune"/>
+        <div class="hint">Leave blank for all</div>
+      </div>
+      <div class="form-group">
+        <label>Pages to Scrape</label>
+        <input type="number" id="pages" value="2" min="1" max="10"/>
+        <div class="hint">Each page ≈ 25 jobs</div>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btn-start" onclick="startScrape()">
+      <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+      </svg>
+      Start Scraping
+    </button>
+  </div>
+
+  <!-- Status section -->
+  <div id="status-section">
+    <div id="status-content"></div>
+  </div>
+</div>
+
+<div class="footer">Built with Django &amp; Selenium &nbsp;·&nbsp; Report powered by openpyxl</div>
+
+<script>
+  let pollInterval = null;
+
+  function startScrape() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const keyword  = document.getElementById('keyword').value.trim();
+    const location = document.getElementById('location').value.trim();
+    const pages    = document.getElementById('pages').value;
+
+    if (!email || !password || !keyword) {
+      alert('Please fill in Email, Password and Job Role.');
+      return;
+    }
+
+    // Disable button, show status
+    document.getElementById('btn-start').disabled = true;
+    document.getElementById('status-section').style.display = 'block';
+    showRunning("Logging in to LinkedIn…", 10);
+
+    const fd = new FormData();
+    fd.append('email',    email);
+    fd.append('password', password);
+    fd.append('keyword',  keyword);
+    fd.append('location', location);
+    fd.append('pages',    pages);
+
+    fetch('/scrape/', { method:'POST', body:fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { showError(data.error); return; }
+        pollStatus(data.job_id, keyword);
+      })
+      .catch(err => showError(err.toString()));
+  }
+
+  function pollStatus(jobId, keyword) {
+    let step = 20;
+    const msgs = [
+      "Searching for jobs…",
+      "Loading job cards…",
+      "Scrolling through listings…",
+      "Extracting company names…",
+      "Extracting locations…",
+      "Scraping page 2…",
+      "Generating Excel report…",
+      "Building charts…",
+      "Almost done…",
+    ];
+    let msgIdx = 0;
+
+    pollInterval = setInterval(() => {
+      fetch(`/status/${jobId}/`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'running') {
+            step = Math.min(step + 8, 88);
+            showRunning(msgs[msgIdx % msgs.length], step);
+            msgIdx++;
+          } else if (data.status === 'done') {
+            clearInterval(pollInterval);
+            showSuccess(data.filename, data.count, keyword);
+          } else if (data.status === 'error') {
+            clearInterval(pollInterval);
+            showError(data.error || 'Unknown error occurred.');
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+  }
+
+  function showRunning(msg, pct) {
+    document.getElementById('status-content').innerHTML = `
+      <div class="status-box">
+        <div class="status-title">
+          <div class="spinner"></div>
+          Scraping in progress…
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar" style="width:${pct}%"></div>
+        </div>
+        <div id="status-msg">${msg}</div>
+      </div>
+    `;
+  }
+
+  function showSuccess(filename, count, keyword) {
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('status-content').innerHTML = `
+      <div class="success-box">
+        <div class="success-icon">✅</div>
+        <h3>Report Ready!</h3>
+        <p>Scraped <strong>${count}</strong> jobs for "<strong>${keyword}</strong>".<br>
+           Your Excel report has 3 sheets: Raw Data, Summary Stats &amp; Charts.</p>
+        <a class="btn-download" href="/download/${filename}/">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+          Download Excel Report
+        </a>
+        <button class="btn-reset" onclick="resetForm()">← Scrape again</button>
+      </div>
+    `;
+  }
+
+  function showError(msg) {
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('status-content').innerHTML = `
+      <div class="error-box">
+        <h4>❌ Scraping Failed</h4>
+        <p>${msg}</p>
+      </div>
+    `;
+    setTimeout(() => {
+      document.getElementById('status-section').style.display = 'none';
+    }, 8000);
+  }
+
+  function resetForm() {
+    clearInterval(pollInterval);
+    document.getElementById('form-section').style.display = 'block';
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('status-section').style.display = 'none';
+    document.getElementById('status-content').innerHTML = '';
+  }
+</script>
+</body>
+</html>

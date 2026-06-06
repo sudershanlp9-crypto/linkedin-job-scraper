@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Chrome
+chromedriver.exe
+
+# Reports (generated files)
+reports/
+
+# Temp Chrome profiles
+li_scraper_*/
+
+# Django
+db.sqlite3
+
+# VS Code
+.vscode/
